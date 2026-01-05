@@ -1,0 +1,197 @@
+/* =====================
+   Layout auth
+===================== */
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;   /* căn giữa ngang */
+  align-items: center;       /* căn giữa dọc */
+  /* background: linear-gradient(135deg, #2ecc71, #27ae60); */
+}
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* background: linear-gradient(135deg, #4caf50, #2e7d32); */
+  padding: 20px;
+}
+
+.auth-card {
+  width: 400px;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.15);
+  padding: 28px 26px 30px;
+  animation: fadeIn 0.4s ease;
+}
+
+/* =====================
+   Header
+===================== */
+.auth-header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.auth-header h1 {
+  margin: 0;
+  font-size: 26px;
+  color: #2e7d32;
+}
+
+.auth-header p {
+  margin-top: 6px;
+  color: #666;
+}
+
+/* =====================
+   Form
+===================== */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  margin-top: 14px;
+}
+
+.form-group label {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.form-group input {
+  width: 93%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.4px solid #ddd;
+  outline: none;
+  transition: all 0.25s;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.15);
+}
+
+/* =====================
+   Error
+===================== */
+.error-message {
+  background: #ffe5e5;
+  color: #c62828;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  border: 1px solid #ffb3b3;
+}
+
+/* =====================
+   Submit button
+===================== */
+.submit-btn {
+  margin-top: 18px;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.submit-btn:hover:not(.loading) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(76, 175, 80, 0.35);
+}
+
+.submit-btn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* =====================
+   Toggle login/signup
+===================== */
+.toggle-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.toggle-btn {
+  border: none;
+  background: none;
+  color: #2e7d32;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toggle-btn:hover {
+  text-decoration: underline;
+}
+
+/* =====================
+   OR divider
+===================== */
+.or-divider {
+  position: relative;
+  text-align: center;
+  margin: 16px 0 4px;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 45%;
+  height: 1px;
+  background: #ddd;
+}
+
+.or-divider::before {
+  left: 0;
+}
+
+.or-divider::after {
+  right: 0;
+}
+
+.or-text {
+  background: #fff;
+  padding: 0 10px;
+  color: #777;
+  font-size: 13px;
+}
+
+/* =====================
+   Animation
+===================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================
+   Responsive
+===================== */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 22px 18px;
+  }
+}
