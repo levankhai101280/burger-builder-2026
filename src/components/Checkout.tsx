@@ -1,11 +1,11 @@
-// src/pages/Checkout.tsx
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '../services/firebase';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../services/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import './Checkout.css';
+import type { User } from 'firebase/auth';
 
 export default function Checkout() {
   const location = useLocation();
@@ -22,6 +22,31 @@ export default function Checkout() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState<string>('');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+
+        let name = user.displayName;
+        if (!name && user.email) {
+          const prefix = user.email.split('@')[0];
+          name = prefix
+            .charAt(0)
+            .toUpperCase() + prefix.slice(1).toLowerCase(); // Capitalize cho đẹp
+        }
+        name = name || 'Người dùng';
+
+        setDisplayName(name);
+      } else {
+        navigate('/auth', { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -58,13 +83,18 @@ export default function Checkout() {
 
   return (
     <div className="checkout-container">
-      {/* Navbar giống Builder */}
+      {/* Navbar với Xin chào */}
       <nav className="navbar">
         <span className="brand" onClick={() => navigate('/')}>
           Burger Builder
         </span>
 
         <div className="nav-links">
+          {currentUser && (
+            <span className="welcome-text">
+              Xin chào, <strong>{displayName}</strong>!
+            </span>
+          )}
           <button onClick={() => navigate('/')}>Builder</button>
           <button onClick={() => navigate('/orders')}>Orders</button>
           <button onClick={handleLogout}>Logout</button>

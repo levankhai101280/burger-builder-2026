@@ -19,7 +19,6 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // State cho modal reset password
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
@@ -30,13 +29,16 @@ export default function Auth() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        toast.success(
-          isSignUp
-            ? 'Đăng ký thành công! Chào mừng bạn đến với Burger Builder 🎉'
-            : 'Đăng nhập thành công! Đang chuyển hướng...',
-          { duration: 2200 }
-        );
-        navigate('/', { replace: true });
+        // Fallback an toàn ở mọi nơi
+        const displayName =
+          user.displayName ||
+          (user.email ? user.email.split('@')[0] : 'Người dùng');
+
+        // Chỉ toast khi đăng nhập bình thường (không phải signup)
+        if (!isSignUp) {
+          toast.success(`Chào mừng trở lại ${displayName}!`, { duration: 2200 });
+          navigate('/', { replace: true });
+        }
       }
     });
 
@@ -49,16 +51,39 @@ export default function Auth() {
     setLoading(true);
 
     const cleanEmail = email.trim();
+    const cleanName = name.trim();
 
     try {
       if (isSignUp) {
-        if (!name.trim()) {
+        if (!cleanName) {
           throw new Error('Vui lòng nhập tên hiển thị');
         }
-        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-        await updateProfile(userCredential.user, { displayName: name.trim() });
+
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          cleanEmail,
+          password
+        );
+
+        await updateProfile(userCredential.user, { displayName: cleanName });
+
+        // Cố gắng sync dữ liệu mới nhất
+        await auth.currentUser?.reload();
+        await userCredential.user.getIdToken(true); // force refresh token
+
+        // Lấy tên đã cập nhật (fallback về tên vừa nhập nếu chưa kịp sync)
+        const displayName = auth.currentUser?.displayName || cleanName;
+
+        toast.success(
+          `Đăng ký thành công! Chào mừng ${displayName} đến với Burger Builder 🎉`,
+          { duration: 3200 }
+        );
+
+        // Chuyển hướng
+        navigate('/', { replace: true });
       } else {
         await signInWithEmailAndPassword(auth, cleanEmail, password);
+        // Đăng nhập sẽ để onAuthStateChanged xử lý
       }
     } catch (err: any) {
       let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại!';
@@ -92,7 +117,6 @@ export default function Auth() {
     }
   };
 
-  // Xử lý gửi email reset password
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setResetError(null);
@@ -102,9 +126,10 @@ export default function Auth() {
 
     try {
       await sendPasswordResetEmail(auth, cleanResetEmail);
-      toast.success('Đã gửi email khôi phục mật khẩu! Kiểm tra hộp thư (và thư rác) nhé.', {
-        duration: 5000,
-      });
+      toast.success(
+        'Đã gửi email khôi phục mật khẩu! Kiểm tra hộp thư (và thư rác) nhé.',
+        { duration: 5000 }
+      );
       setShowResetModal(false);
       setResetEmail('');
     } catch (err: any) {
@@ -153,7 +178,7 @@ export default function Auth() {
                     onClick={() => {
                       setShowResetModal(true);
                       setResetError(null);
-                      setResetEmail(email); // Tự động điền email nếu đã nhập
+                      setResetEmail(email);
                     }}
                   >
                     Khôi phục ngay
@@ -161,7 +186,7 @@ export default function Auth() {
                 </div>
               )}
 
-              {error.includes('không chính xác') && !isSignUp && (
+              {error?.includes('không chính xác') && !isSignUp && (
                 <div style={{ marginTop: '6px', fontSize: '0.85em', color: '#ff9800' }}>
                   Chưa có tài khoản?{' '}
                   <button
@@ -247,7 +272,6 @@ export default function Auth() {
         </form>
       </div>
 
-      {/* Modal Reset Password */}
       {showResetModal && (
         <div className="modal-overlay">
           <div className="modal-content">

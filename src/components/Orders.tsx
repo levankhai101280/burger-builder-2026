@@ -1,16 +1,40 @@
-// src/components/Orders.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../services/firebase';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import './Orders.css';
-
 
 export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState<string>('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+
+        let name = user.displayName;
+        if (!name && user.email) {
+          const prefix = user.email.split('@')[0];
+          name = prefix
+            .charAt(0)
+            .toUpperCase() + prefix.slice(1).toLowerCase(); // Capitalize cho đẹp
+        }
+        name = name || 'Người dùng';
+
+        setDisplayName(name);
+      } else {
+        navigate('/auth', { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -50,10 +74,18 @@ export default function Orders() {
 
   return (
     <div className="orders-container">
-      {/* Navbar */}
+      {/* Navbar với Xin chào */}
       <nav className="navbar">
-        <span>Burger Builder</span>
-        <div>
+        <span className="brand" onClick={() => navigate('/')}>
+          Burger Builder
+        </span>
+
+        <div className="nav-links">
+          {currentUser && (
+            <span className="welcome-text">
+              Xin chào, <strong>{displayName}</strong>!
+            </span>
+          )}
           <button onClick={() => navigate('/')}>Builder</button>
           <button onClick={handleLogout}>Logout</button>
         </div>
