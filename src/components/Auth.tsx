@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
-import './Auth.css'; // Import file CSS thuần
+import './Auth.css';
+import toast from 'react-hot-toast';
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -16,23 +19,47 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // State cho modal reset password
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        toast.success(
+          isSignUp
+            ? 'Đăng ký thành công! Chào mừng bạn đến với Burger Builder 🎉'
+            : 'Đăng nhập thành công! Đang chuyển hướng...',
+          { duration: 2200 }
+        );
+        navigate('/', { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate, isSignUp]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    const cleanEmail = email.trim();
+
     try {
       if (isSignUp) {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        if (name && userCredential.user) {
-          await updateProfile(userCredential.user, { displayName: name });
+        if (!name.trim()) {
+          throw new Error('Vui lòng nhập tên hiển thị');
         }
+        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+        await updateProfile(userCredential.user, { displayName: name.trim() });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth, cleanEmail, password);
       }
-      navigate('/');
     } catch (err: any) {
       let errorMessage = 'Đã có lỗi xảy ra. Vui lòng thử lại!';
 
@@ -46,6 +73,14 @@ export default function Auth() {
         case 'auth/invalid-email':
           errorMessage = 'Email không hợp lệ.';
           break;
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          errorMessage = 'Email hoặc mật khẩu không chính xác.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Quá nhiều lần thử. Vui lòng chờ một lát rồi thử lại.';
+          break;
         default:
           errorMessage = err.message || errorMessage;
       }
@@ -57,20 +92,92 @@ export default function Auth() {
     }
   };
 
+  // Xử lý gửi email reset password
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    setResetLoading(true);
+
+    const cleanResetEmail = resetEmail.trim();
+
+    try {
+      await sendPasswordResetEmail(auth, cleanResetEmail);
+      toast.success('Đã gửi email khôi phục mật khẩu! Kiểm tra hộp thư (và thư rác) nhé.', {
+        duration: 5000,
+      });
+      setShowResetModal(false);
+      setResetEmail('');
+    } catch (err: any) {
+      let message = 'Không thể gửi email. Vui lòng thử lại!';
+
+      switch (err.code) {
+        case 'auth/invalid-email':
+          message = 'Email không hợp lệ.';
+          break;
+        case 'auth/user-not-found':
+          message = 'Không tìm thấy tài khoản với email này.';
+          break;
+        case 'auth/too-many-requests':
+          message = 'Quá nhiều yêu cầu. Vui lòng thử lại sau vài phút.';
+          break;
+        default:
+          message = err.message || message;
+      }
+
+      setResetError(message);
+      console.error('Reset Password Error:', err.code, err.message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
-        {/* Header */}
         <div className="auth-header">
           <h1>Burger Builder</h1>
-          <p>
-            {isSignUp ? 'Tạo tài khoản để lưu đơn hàng' : 'Đăng nhập để tiếp tục'}
-          </p>
+          <p>{isSignUp ? 'Tạo tài khoản để lưu đơn hàng' : 'Đăng nhập để tiếp tục'}</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="auth-form">
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="error-message">
+              {error}
+
+              {!isSignUp && (
+                <div style={{ marginTop: '8px', fontSize: '0.85em', color: '#ff9800' }}>
+                  [!] Quên mật khẩu?{' '}
+                  <button
+                    type="button"
+                    className="forgot-link"
+                    onClick={() => {
+                      setShowResetModal(true);
+                      setResetError(null);
+                      setResetEmail(email); // Tự động điền email nếu đã nhập
+                    }}
+                  >
+                    Khôi phục ngay
+                  </button>
+                </div>
+              )}
+
+              {error.includes('không chính xác') && !isSignUp && (
+                <div style={{ marginTop: '6px', fontSize: '0.85em', color: '#ff9800' }}>
+                  Chưa có tài khoản?{' '}
+                  <button
+                    type="button"
+                    className="forgot-link"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setError(null);
+                    }}
+                  >
+                    Đăng ký ngay
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {isSignUp && (
             <div className="form-group">
@@ -81,7 +188,7 @@ export default function Auth() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Ví dụ: Nguyễn Văn A"
-                required={isSignUp}
+                required
               />
             </div>
           )}
@@ -92,9 +199,10 @@ export default function Auth() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value.trim())}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="example@gmail.com"
               required
+              autoComplete="email"
             />
           </div>
 
@@ -107,6 +215,7 @@ export default function Auth() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               required
+              autoComplete="current-password"
             />
           </div>
 
@@ -118,11 +227,8 @@ export default function Auth() {
             {loading ? 'Đang xử lý...' : isSignUp ? 'Đăng ký' : 'Đăng nhập'}
           </button>
 
-          {/* Toggle */}
           <div className="toggle-section">
-            <span>
-              {isSignUp ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}
-            </span>
+            <span>{isSignUp ? 'Đã có tài khoản?' : 'Chưa có tài khoản?'}</span>
             <button
               type="button"
               className="toggle-btn"
@@ -135,12 +241,56 @@ export default function Auth() {
             </button>
           </div>
 
-          {/* OR */}
           <div className="or-divider">
             <span className="or-text">OR</span>
           </div>
         </form>
       </div>
+
+      {/* Modal Reset Password */}
+      {showResetModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Khôi phục mật khẩu</h2>
+            <p>Nhập email của bạn, chúng tôi sẽ gửi link đặt lại mật khẩu.</p>
+
+            {resetError && <div className="error-message">{resetError}</div>}
+
+            <form onSubmit={handleResetPassword}>
+              <div className="form-group">
+                <label htmlFor="reset-email">Email</label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="example@gmail.com"
+                  required
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="modal-buttons">
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={() => setShowResetModal(false)}
+                  disabled={resetLoading}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className={`submit-btn ${resetLoading ? 'loading' : ''}`}
+                  disabled={resetLoading}
+                >
+                  {resetLoading ? 'Đang gửi...' : 'Gửi email'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

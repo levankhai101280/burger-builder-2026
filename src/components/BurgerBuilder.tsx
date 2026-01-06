@@ -1,9 +1,10 @@
-// src/components/BurgerBuilder.tsx (đã fix layer hiển thị đúng)
-import { useState } from 'react';
+// src/components/BurgerBuilder.tsx
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
-import { signOut } from 'firebase/auth';
-import './BurgerBuilder.css';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import type { User } from 'firebase/auth';
+import "./BurgerBuilder.css";
 
 export default function BurgerBuilder() {
   const [ingredients, setIngredients] = useState({
@@ -13,6 +14,9 @@ export default function BurgerBuilder() {
     meat: 0,
   });
 
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [displayName, setDisplayName] = useState<string>('');
+
   const prices = {
     salad: 0.5,
     bacon: 0.7,
@@ -21,48 +25,75 @@ export default function BurgerBuilder() {
   };
 
   const basePrice = 0.0;
-  const totalPrice = basePrice +
+  const totalPrice =
+    basePrice +
     ingredients.salad * prices.salad +
     ingredients.bacon * prices.bacon +
     ingredients.cheese * prices.cheese +
     ingredients.meat * prices.meat;
 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+        setDisplayName(
+          user.displayName ||
+            user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') ||
+            'Người dùng'
+        );
+      } else {
+        navigate('/auth', { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
   const addIngredient = (type: keyof typeof ingredients) => {
-    setIngredients(prev => ({ ...prev, [type]: prev[type] + 1 }));
+    setIngredients((prev) => ({ ...prev, [type]: prev[type] + 1 }));
   };
 
   const removeIngredient = (type: keyof typeof ingredients) => {
-    setIngredients(prev => ({
+    setIngredients((prev) => ({
       ...prev,
       [type]: Math.max(0, prev[type] - 1),
     }));
   };
 
-  const navigate = useNavigate();
-
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate('/auth');
+      navigate('/auth', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Có lỗi khi đăng xuất');
+      alert('Có lỗi khi đăng xuất. Vui lòng thử lại.');
     }
   };
 
   const handleCheckout = () => {
+    if (totalPrice <= basePrice) return;
     navigate('/checkout', { state: { ingredients, totalPrice } });
   };
 
   return (
     <div className="burger-builder">
       {/* Navbar */}
-      <header className="navbar">
+      <header className="navbar" >
         <h1 className="navbar-title">Burger Builder</h1>
+
         <div className="navbar-buttons">
+          {currentUser && (
+            <span className="welcome-text">
+              Xin chào, <strong>{displayName}</strong>!
+            </span>
+          )}
+
           <button className="nav-btn" onClick={() => navigate('/orders')}>
             Orders
           </button>
+
           <button className="nav-btn logout" onClick={handleLogout}>
             Logout
           </button>
@@ -77,21 +108,28 @@ export default function BurgerBuilder() {
           <div className="burger-stack">
             <div className="bread top">Bread Top</div>
 
-            {/* Render layer an toàn, luôn hiển thị đúng số lượng */}
             {Array.from({ length: ingredients.salad }).map((_, i) => (
-              <div key={`salad-${i}`} className="layer salad">salad</div>
+              <div key={`salad-${i}`} className="layer salad">
+                Salad
+              </div>
             ))}
 
             {Array.from({ length: ingredients.bacon }).map((_, i) => (
-              <div key={`bacon-${i}`} className="layer bacon">bacon</div>
+              <div key={`bacon-${i}`} className="layer bacon">
+                Bacon
+              </div>
             ))}
 
             {Array.from({ length: ingredients.cheese }).map((_, i) => (
-              <div key={`cheese-${i}`} className="layer cheese">cheese</div>
+              <div key={`cheese-${i}`} className="layer cheese">
+                Cheese
+              </div>
             ))}
 
             {Array.from({ length: ingredients.meat }).map((_, i) => (
-              <div key={`meat-${i}`} className="layer meat">meat</div>
+              <div key={`meat-${i}`} className="layer meat">
+                Meat
+              </div>
             ))}
 
             <div className="bread bottom">Bread Bottom</div>
@@ -108,7 +146,7 @@ export default function BurgerBuilder() {
           <h2 className="section-title">Build Your Burger</h2>
 
           <div className="controls-grid">
-            {(['salad', 'bacon', 'cheese', 'meat'] as const).map(type => (
+            {(['salad', 'bacon', 'cheese', 'meat'] as const).map((type) => (
               <div key={type} className="control-item">
                 <span className="ingredient-name">
                   {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -136,7 +174,10 @@ export default function BurgerBuilder() {
             ))}
           </div>
 
-          <button className="checkout-button" onClick={handleCheckout}>
+          <button
+            className={`checkout-button ${totalPrice <= basePrice ? 'disabled' : ''}`}
+            onClick={handleCheckout}
+          >
             Checkout
           </button>
         </section>

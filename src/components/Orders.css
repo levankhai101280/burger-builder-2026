@@ -4,7 +4,7 @@
 }
 
 .navbar {
-  background: #ea580c;
+  /* background: #ea580c; */
   color: white;
   padding: 1rem 2rem;
   display: flex;
@@ -25,12 +25,6 @@
   padding: 2rem 1rem;
   max-width: 900px;
   margin: 0 auto;
-}
-
-h1 {
-  color: #ea580c;
-  text-align: center;
-  margin-bottom: 2rem;
 }
 
 .no-orders {
