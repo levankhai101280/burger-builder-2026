@@ -20,7 +20,7 @@ export default function BurgerBuilder() {
     meat: 1.3,
   };
 
-  const basePrice = 4.0;
+  const basePrice = 0.0;
   const totalPrice = basePrice +
     ingredients.salad * prices.salad +
     ingredients.bacon * prices.bacon +
@@ -79,19 +79,19 @@ export default function BurgerBuilder() {
 
             {/* Render layer an toàn, luôn hiển thị đúng số lượng */}
             {Array.from({ length: ingredients.salad }).map((_, i) => (
-              <div key={`salad-${i}`} className="layer salad" />
+              <div key={`salad-${i}`} className="layer salad">salad</div>
             ))}
 
             {Array.from({ length: ingredients.bacon }).map((_, i) => (
-              <div key={`bacon-${i}`} className="layer bacon" />
+              <div key={`bacon-${i}`} className="layer bacon">bacon</div>
             ))}
 
             {Array.from({ length: ingredients.cheese }).map((_, i) => (
-              <div key={`cheese-${i}`} className="layer cheese" />
+              <div key={`cheese-${i}`} className="layer cheese">cheese</div>
             ))}
 
             {Array.from({ length: ingredients.meat }).map((_, i) => (
-              <div key={`meat-${i}`} className="layer meat" />
+              <div key={`meat-${i}`} className="layer meat">meat</div>
             ))}
 
             <div className="bread bottom">Bread Bottom</div>

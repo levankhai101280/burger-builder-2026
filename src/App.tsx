@@ -8,6 +8,8 @@ import Auth from './components/Auth';
 import BurgerBuilder from './components/BurgerBuilder';
 import Checkout from './components/Checkout';
 import Orders from './components/Orders'; // Nếu có
+import PublicRoute from './routes/public';
+import PrivateRoute from './routes/PrivateRoute';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -41,29 +43,19 @@ function App() {
 
   return (
     <Routes>
-      {/* Trang Auth - ai cũng vào được */}
-      <Route path="/auth" element={<Auth />} />
+      <Route element={<PublicRoute user={user} />}>
+        <Route path="/auth" element={<Auth />} />
+      </Route>
+      
+      <Route element={<PrivateRoute user={user} />}>
+        <Route path="/" element={<BurgerBuilder/>}/>
 
-      {/* Trang chính (Burger Builder) - chỉ hiện khi đã login */}
-      <Route
-        path="/"
-        element={user ? <BurgerBuilder /> : <Navigate to="/auth" replace />}
-      />
+        <Route path="/checkout" element={<Checkout/>}/>
 
-      {/* Checkout - chỉ hiện khi đã login */}
-      <Route
-        path="/checkout"
-        element={user ? <Checkout /> : <Navigate to="/auth" replace />}
-      />
+        <Route path="/orders" element={<Orders/>}/>
 
-      {/* Orders - chỉ hiện khi đã login (uncomment khi sẵn sàng) */}
-      {/* <Route
-        path="/orders"
-        element={user ? <Orders /> : <Navigate to="/auth" replace />}
-      /> */}
-
-      {/* Mọi route lạ → redirect về Auth nếu chưa login, hoặc Builder nếu đã login */}
-      <Route path="*" element={<Navigate to={user ? '/' : '/auth'} replace />} />
+        <Route path="*" element={<Navigate to={user ? '/' : '/auth'} replace />} />
+      </Route>
     </Routes>
   );
 }
