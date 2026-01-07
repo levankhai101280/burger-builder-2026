@@ -13,7 +13,7 @@ body {
 
 .auth-container {
   width: 100vw;
-  min-height: 100vw;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
