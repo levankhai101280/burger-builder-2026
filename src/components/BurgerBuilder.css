@@ -1,108 +1,391 @@
-.navbar{
-    width: 95vw;
-    height: 30px;
-    /* border: 1px solid black; */
-    background: gray;
-}
-.navbar-title{
-    color: aliceblue;
-    font-size: 31px;
-}
-.main-content{
-    /* border: 1px solid black; */
-    align-items: center;
-    text-align: center;
-    margin: 0;
-    margin-top: -20%;
-    padding: 20%;
-}
-.burger-stack{
-    /* border: 1px solid black; */
-    width: 200px;
-    margin: auto;
-}
-/* Nếu cần tùy chỉnh thêm */
-.rht-toast-warning {
-  background: #fff3cd !important;
-  color: #856404 !important;
-  border: 1px solid #ffeeba !important;
+/* --- 1. GENERAL SETUP --- */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
+
+body {
+  margin: 0;  
+  padding: 0;
+  font-family: 'Open Sans', sans-serif;
+  background-color: #f8f9fa;
+  overflow-x: hidden;
 }
 
-/* Trong BurgerBuilder.css */
 
-.checkout-button {
-  /* Các style cũ giữ nguyên */
-  background-color: #DAD735;
+button {
+  font-family: sans-serif;
   cursor: pointer;
-  /* ... */
+  transition: all 0.2s ease-in-out;
 }
 
-.checkout-button.disabled {
-  background-color: #C7C6C6; /* Màu xám để báo hiệu disable */
-  cursor: not-allowed;        /* Hiện con trỏ chuột cấm */
-  color: #888888;
+/* --- 2. NAVBAR --- */
+.navbar {
+  background-color: white; /* Đã đổi lại màu nâu cho đúng theme, bạn có thể để gray nếu thích */
+  height: 64px;
+  width: 100%;            /* Dùng 100% thay vì 100vw để tránh thanh cuộn ngang */
+  border-bottom: 1px solid rgba(0,0,0,0.1); 
+  box-sizing: border-box;
   
-  /* QUAN TRỌNG: KHÔNG ĐƯỢC CÓ DÒNG NÀY: */
-  /* pointer-events: none;  <-- XÓA DÒNG NÀY NẾU CÓ */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;        /* Tăng padding một chút cho thoáng */
+  
+  /* CẤU HÌNH BÁM DÍNH */
+  position: fixed;        /* Fixed sẽ bám chặt hơn Sticky, luôn nổi trên cùng */
+  top: 0;                 /* Bám sát mép trên */
+  left: 0;                /* Bám sát mép trái */
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
 
-.button-group {
-    display: flex; 
-    gap: 30px;
-    /* border: 1px solid black; */
-    padding-left: 37.5%;
-    padding-bottom: 10px;
+.navbar-title {
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgb(207, 46, 46);
+  font-family: sans-serif;
 }
-.button-group button {
-    /* border: 1px solid black; */
-}
-/* Thêm vào cuối file BurgerBuilder.css */
 
+.navbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Cart Indicator trên Navbar */
+.cart-indicator {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: black;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+}
+
+.cart-indicator.clickable {
+  cursor: pointer;
+}
+
+.cart-indicator.clickable:hover {
+  background-color: #fff;
+  color: #703B09;
+  border-color: #703B09;
+  transform: translateY(-1px);
+}
+
+/* User Profile */
 .user-profile-section {
-    display: flex;
-    align-items: center;
-    gap: 10px; /* Khoảng cách giữa icon và tên */
-    margin-right: 15px;
-    padding: 5px 10px;
-    background-color: rgba(255, 255, 255, 0.1); /* Nền mờ nhẹ cho đẹp */
-    border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: black;
 }
 
-.avatar-wrapper {
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    overflow: hidden;
-    background-color: #fff; /* Nền trắng cho icon */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border: 2px solid #703b09; /* Viền màu nâu giống theme */
-}
-
-.user-avatar {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.avatar-wrapper img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid white;
+  object-fit: cover;
 }
 
 .default-avatar-icon {
-    width: 24px;
-    height: 24px;
-    color: #703b09; /* Màu icon */
+  font-size: 1.5rem;
+  background: #eee;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
 }
 
-.user-name {
-    font-weight: bold;
-    color: white; /* Hoặc màu #703b09 tuỳ vào màu nền navbar của bạn */
-    font-size: 0.95rem;
-    max-width: 150px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.nav-btn.logout {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.5);
+  color: black;
+  padding: 6px 12px;
+  border-radius: 4px;
 }
 
-.navbar-buttons{
+.nav-btn.logout:hover {
+  background: rgba(255,255,255,0.1);
+  border-color: white;
+}
+
+/* --- 3. LAYOUT CONTENT (ĐÃ SỬA: Cân bằng 2 cột) --- */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 1000px;
+  /* Đẩy nội dung xuống vì Navbar đang Fixed (64px + 26px padding) */
+  margin: 90px auto 30px auto; 
+  gap: 30px;
+  padding: 0 20px;
+}
+
+@media (min-width: 768px) {
+  .main-content {
+    flex-direction: row;
+    /* QUAN TRỌNG: Kéo giãn 2 cột để chiều cao bằng nhau */
+    align-items: stretch; 
+  }
+}
+
+.navbar-buttons .orders-btn{
+    color: black;
     /* border: 1px solid black; */
-    display: flex;
+}
+
+/* --- 4. BURGER VISUALIZATION (Trái) (ĐÃ SỬA) --- */
+.burger-section {
+  flex: 1; /* Sửa từ 1.5 thành 1 để bằng bên phải */
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: center;
+  min-height: 450px; /* Tăng chiều cao tối thiểu một chút */
+  
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Đẩy tiêu đề lên đầu, giá xuống đáy */
+}
+
+.section-title {
+  font-size: 1.2rem;
+  color: #555;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+.burger-stack {
+  flex-grow: 1; /* Chiếm khoảng trống ở giữa */
+  width: 90%;   /* Rộng hơn chút */
+  margin: 0 auto;
+  overflow-y: auto;
+  max-height: 400px;
+  padding: 50% 0;  
+  scrollbar-width: thin;
+  /* border: 1px solid black; */
+}
+
+/* Nguyên liệu bánh */
+/* --- 1. THIẾT LẬP CHUNG CHO CÁC LỚP --- */
+.burger-stack div {
+  width: 90%;              /* Chiều rộng chuẩn */
+  margin: 3px auto;        /* Khoảng cách giữa các lớp */
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.8rem;       /* Chữ nhỏ gọn */
+  color: rgba(255,255,255,0.9); /* Màu chữ trắng mờ nhẹ */
+  box-shadow: 0 3px 0 rgba(0,0,0,0.1); /* Tạo độ dày giả 3D rất nhẹ ở đáy */
+  transition: all 0.2s;
+  
+  /* Căn chữ ra giữa theo chiều dọc */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+}
+
+/* --- 2. CHI TIẾT TỪNG NGUYÊN LIỆU --- */
+
+/* Bánh mì trên: Màu vàng cam, bo tròn mạnh phía trên */
+.bread.top {
+  height: 45px;
+  background-color: orange; 
+  border-radius: 40px 40px 10px 10px; /* Bo mái vòm */
+  width: 90%;
+  margin-bottom: 5px;
+  color: black; /* Chữ màu nâu đậm cho dễ đọc trên nền vàng */
+}
+
+/* Bánh mì dưới: Màu vàng cam, bo tròn mạnh phía dưới */
+.bread.bottom {
+  height: 45px;
+  background-color: orange;
+  border-radius: 10px 10px 40px 40px; /* Bo đáy */
+  margin-top: 5px;
+  color: black;
+}
+
+/* Thịt: Màu nâu đậm, bo góc vừa phải */
+.meat {
+  height: 10px;
+  width: 85% !important; /* Nhỏ hơn bánh một chút */
+  background-color: #582f0e;
+  border-radius: 12px;
+}
+
+/* Phô mai: Màu vàng tươi, dẹt, bo góc nhỏ */
+.cheese {
+  height: 10px;
+  width: 85% !important; /* Rộng hơn để cảm giác phủ lên */
+  background-color: #ffd60a;
+  border-radius: 6px;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.05); /* Bóng nhạt hơn */
+  color: #7c4403;
+}
+
+/* Rau: Màu xanh lá, bo tròn kiểu viên thuốc */
+.salad {
+  height: 10px;
+  width: 85% !important;
+  background-color: #70e000;
+  border-radius: 20px;
+  color: #0d4d00;
+}
+
+/* Thịt xông khói: Màu đỏ gạch, dẹt */
+.bacon {
+  height: 10px;
+  width: 85% !important;
+  background-color: #d00000;
+  border-radius: 4px;
+  margin: 4px auto;
+}
+.price-amount {
+  font-weight: 800;
+  color: #CF8F2E;
+  margin-left: 10px;
+  font-size: 1.4rem;
+}
+
+/* --- 5. CONTROLS (Phải) (ĐÃ SỬA) --- */
+.controls-section {
+  flex: 1; /* Bằng với bên burger */
+  background: #CF8F2E;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  color: white;
+  
+  display: flex;
+  flex-direction: column; /* Để căn chỉnh nội dung bên trong */
+}
+
+.controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 25px;
+  flex-grow: 1;            /* Đẩy nút thanh toán xuống đáy */
+  justify-content: center; /* Căn giữa các nút điều khiển */
+}
+
+.control-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.15); /* Tăng độ sáng nền một chút */
+  padding: 12px 20px;
+  border-radius: 10px;
+  transition: transform 0.2s;
+}
+
+.control-item:hover {
+  transform: translateX(5px);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ingredient-name {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.2); /* Nền cho cụm nút */
+  padding: 4px;
+  border-radius: 20px;
+}
+
+.quantity {
+  width: 30px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.control-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn.less { background-color: #e6c8a8; color: #a05315; }
+.control-btn.less:disabled { background-color: #d8c9bc; cursor: not-allowed; opacity: 0.6; color: #888;}
+.control-btn.more { background-color: #fff; color: #703B09; }
+.control-btn:hover:not(:disabled) { transform: scale(1.1); }
+
+/* Nút hành động chính */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto; /* Đảm bảo nằm dưới cùng nếu nội dung trên ít */
+}
+
+.add-to-cart-btn, .checkout-button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 30px;
+  font-weight: bold;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.add-to-cart-btn {
+  background-color: #fff;
+  color: #CF8F2E;
+}
+.add-to-cart-btn:hover:not(:disabled) { background-color: #fff8f0; color: #b57b24; transform: translateY(-2px);}
+.add-to-cart-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none;}
+
+.checkout-button {
+  background-color: #5C9210;
+  color: white;
+  border: 2px solid transparent;
+}
+.checkout-button:hover:not(:disabled) { background-color: #48720c; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
+.checkout-button.disabled { background-color: #ccc; cursor: not-allowed; box-shadow: none; }
+.modal-checkout-btn {
+  background-color: #5C9210;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 25px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(92, 146, 16, 0.3);
+}
+
+.modal-checkout-btn:hover {
+  background-color: #4c7a0d;
+  transform: translateY(-2px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
 }

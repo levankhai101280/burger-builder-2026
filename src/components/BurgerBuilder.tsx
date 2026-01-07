@@ -1,4 +1,3 @@
-// src/components/BurgerBuilder.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
@@ -6,39 +5,32 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import "./BurgerBuilder.css";
 
-// 1. IMPORT REACT-TOASTIFY
-import { ToastContainer, toast, Slide } from 'react-toastify';
+// IMPORT COMPONENTS & TYPES
+import CartModal from './Cart/CartModal'; // <--- Import component mới
+import type { IngredientType, Layer, BurgerOrder } from './types'; // <--- Import types
+
+// IMPORT REACT-TOASTIFY
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
-type IngredientType = 'salad' | 'bacon' | 'cheese' | 'meat';
-
-interface Layer {
-  type: IngredientType;
-}
 
 export default function BurgerBuilder() {
   const [layers, setLayers] = useState<Layer[]>([]);
   const [counts, setCounts] = useState<Record<IngredientType, number>>({
-    salad: 0,
-    bacon: 0,
-    cheese: 0,
-    meat: 0,
+    salad: 0, bacon: 0, cheese: 0, meat: 0,
   });
 
+  const [cart, setCart] = useState<BurgerOrder[]>([]);
+  const [showCartModal, setShowCartModal] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState<string>('');
 
-  const prices = {
-    salad: 0.5,
-    bacon: 0.7,
-    cheese: 0.4,
-    meat: 1.3,
-  };
-
-  const basePrice = 0.0;
-  const totalPrice = layers.reduce((sum, layer) => sum + prices[layer.type], basePrice);
-
   const navigate = useNavigate();
+
+  const prices = { salad: 0.5, bacon: 0.7, cheese: 0.4, meat: 1.3 };
+  const basePrice = 0.0;
+
+  const currentBurgerPrice = layers.reduce((sum, layer) => sum + prices[layer.type], basePrice);
+  const totalCartPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -46,14 +38,12 @@ export default function BurgerBuilder() {
         setCurrentUser(user);
         setDisplayName(
           user.displayName ||
-            user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') ||
-            'Người dùng'
+          user.email?.split('@')[0]?.replace(/[^a-zA-Z0-9]/g, '') || 'User'
         );
       } else {
         navigate('/auth', { replace: true });
       }
     });
-
     return () => unsubscribe();
   }, [navigate]);
 
@@ -71,146 +61,156 @@ export default function BurgerBuilder() {
       newLayers.splice(actualIndex, 1);
       return newLayers;
     });
+    setCounts((prev) => ({ ...prev, [type]: Math.max(0, prev[type] - 1) }));
+  };
 
-    setCounts((prev) => ({
-      ...prev,
-      [type]: Math.max(0, prev[type] - 1),
-    }));
+  const handleAddToOrder = () => {
+    if (layers.length === 0) {
+      toast.warn('Bạn chưa chọn nguyên liệu nào cho bánh!');
+      return;
+    }
+
+    const newBurger: BurgerOrder = {
+      id: Date.now(),
+      layers: [...layers],
+      price: currentBurgerPrice
+    };
+    setCart([...cart, newBurger]);
+
+    setLayers([]);
+    setCounts({ salad: 0, bacon: 0, cheese: 0, meat: 0 });
+    toast.success(`Đã thêm bánh #${cart.length + 1} vào giỏ!`);
+  };
+
+  const handleRemoveFromCart = (id: number) => {
+    setCart(prev => prev.filter(item => item.id !== id));
+    toast.info('Đã xóa món khỏi giỏ hàng.');
+  };
+
+  const handleCheckout = () => {
+    if (cart.length === 0 && layers.length === 0) {
+      toast.error('Giỏ hàng đang trống! Hãy làm ít nhất 1 chiếc bánh.');
+      return;
+    }
+    if (cart.length === 0 && layers.length > 0) {
+      toast.info('Vui lòng bấm "Thêm món này vào đơn" trước khi thanh toán.');
+      return;
+    }
+    navigate('/checkout', { state: { cart: cart, totalPrice: totalCartPrice } });
   };
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/auth', { replace: true });
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Có lỗi khi đăng xuất. Vui lòng thử lại.');
-    }
+    await signOut(auth);
+    navigate('/auth');
   };
-
-  // --- HÀM CHECKOUT ĐÃ SỬA VỚI TOAST ---
-  const handleCheckout = () => {
-    if (totalPrice <= basePrice) {
-      // Gọi thông báo Toast
-      toast.warn('Bạn cần chọn thêm nguyên liệu trước khi thanh toán!', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "colored", // Hoặc "light", "dark"
-        transition: Slide, // Hiệu ứng trượt
-      });
-      return;
-    }
-    navigate('/checkout', { state: { layers, totalPrice } });
+  const handleViewOrders = () => {
+    navigate('/orders');
   };
-  // -------------------------------------
 
   const renderLayer = (layer: Layer, index: number) => {
-    const className = `layer ${layer.type}`;
-    return (
-      <div key={`${layer.type}-${index}`} className={className}>
-        {layer.type.charAt(0).toUpperCase() + layer.type.slice(1)}
-      </div>
-    );
+    return <div key={`${layer.type}-${index}`} className={`layer ${layer.type}`}>{layer.type}</div>;
   };
 
   return (
     <div className="burger-builder">
-      <ToastContainer />
+      <ToastContainer position="top-right" autoClose={2000} />
 
-      {/* Navbar */}
       <header className="navbar">
-        <h1 className="navbar-title">Burger Builder</h1>
+        <h1 className="navbar-title">BurgerBuilder</h1>
         <div className="navbar-buttons">
+          
+          {/* --- THÊM NÚT ORDERS TẠI ĐÂY --- */}
+          <button 
+            className="nav-btn orders-btn" 
+            onClick={handleViewOrders}
+            title="Xem lịch sử đơn hàng"
+          >
+            📜 Đơn hàng
+          </button>
+          {/* ------------------------------- */}
+
+          <div
+            className="cart-indicator clickable"
+            onClick={() => setShowCartModal(true)}
+            title="Xem chi tiết giỏ hàng"
+          >
+            🛒 Giỏ hàng: <strong>{cart.length}</strong> món (${totalCartPrice.toFixed(2)})
+          </div>
+
           {currentUser && (
             <div className="user-profile-section">
               <div className="avatar-wrapper">
-                 {currentUser.photoURL ? (
-                    <img src={currentUser.photoURL} alt="Avatar" className="user-avatar" />
-                 ) : (
-                    // SVG Icon hình người mặc định
-                    <svg 
-                      viewBox="0 0 20 20" 
-                      fill="currentColor" 
-                      className="default-avatar-icon"
-                    >
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                 )}
+                {currentUser.photoURL ? (
+                  <img src={currentUser.photoURL} alt="Avt" className="user-avatar" />
+                ) : (
+                  <span className="default-avatar-icon">👤</span>
+                )}
               </div>
               <span className="user-name">{displayName}</span>
             </div>
           )}
-          <button className="nav-btn" onClick={() => navigate('/orders')}>
-            Orders
-          </button>
-          <button className="nav-btn logout" onClick={handleLogout}>
-            Logout
-          </button>
+          
+          <button className="nav-btn logout" onClick={handleLogout}>Đăng xuất</button>
         </div>
       </header>
 
-      {/* Main content */}
       <div className="main-content">
         <section className="burger-section">
-          <h2 className="section-title">Your Burger</h2>
+          <h2 className="section-title">
+            Đang làm chiếc bánh thứ #{cart.length + 1}
+          </h2>
           <div className="burger-stack">
             <div className="bread top">Bread Top</div>
-            {layers.map((layer, index) => renderLayer(layer, index))}
+            {layers.length === 0 ? <p className="empty-msg"></p> : layers.map((l, i) => renderLayer(l, i))}
             <div className="bread bottom">Bread Bottom</div>
           </div>
-
           <div className="price-display">
-            <span className="price-amount">${totalPrice.toFixed(2)}</span>
-            <span className="price-label">Total Price</span>
+            <span className="price-label">Giá bánh này:</span>
+            <span className="price-amount">${currentBurgerPrice.toFixed(2)}</span>
           </div>
         </section>
 
         <section className="controls-section">
-          <h2 className="section-title">Build Your Burger</h2>
-
-          <div className="controls-grid">
+          <div className="controls-container">
             {(['salad', 'bacon', 'cheese', 'meat'] as const).map((type) => (
               <div key={type} className="control-item">
-                <span className="ingredient-name">
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </span>
-
+                <span className="ingredient-name">{type.charAt(0).toUpperCase() + type.slice(1)}</span>
                 <div className="button-group">
-                  <button
-                    className="control-btn less"
-                    onClick={() => removeIngredient(type)}
-                    disabled={counts[type] === 0}
-                  >
-                    Less
-                  </button>
-
+                  <button className="control-btn less" onClick={() => removeIngredient(type)} disabled={counts[type] === 0}>Less</button>
                   <span className="quantity">{counts[type]}</span>
-
-                  <button
-                    className="control-btn more"
-                    onClick={() => addIngredient(type)}
-                  >
-                    More
-                  </button>
+                  <button className="control-btn more" onClick={() => addIngredient(type)}>More</button>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Nút Checkout vẫn giữ nguyên không có disabled attribute */}
-          <button
-            className={`checkout-button ${totalPrice <= basePrice ? 'disabled' : ''}`}
-            onClick={handleCheckout}
-          >
-            Checkout
-          </button>
+          <div className="action-buttons">
+            <button
+              className="add-to-cart-btn"
+              onClick={handleAddToOrder}
+            >
+              + Thêm món này vào đơn
+            </button>
+            <button
+              className="checkout-button"
+              onClick={handleCheckout}
+            >
+              Thanh toán ({cart.length} món)
+            </button>
+          </div>
         </section>
       </div>
+
+      {/* --- SỬ DỤNG COMPONENT MODAL ĐÃ TÁCH --- */}
+      {showCartModal && (
+        <CartModal
+          cart={cart}
+          totalPrice={totalCartPrice}
+          onClose={() => setShowCartModal(false)}
+          onRemoveItem={handleRemoveFromCart}
+          onCheckout={handleCheckout}
+        />
+      )}
     </div>
   );
 }

@@ -8,15 +8,19 @@ body {
   justify-content: center;   /* căn giữa ngang */
   align-items: center;       /* căn giữa dọc */
   /* background: linear-gradient(135deg, #2ecc71, #27ae60); */
+  /* border: 1px solid black; */
 }
 
 .auth-container {
+  width: 100vw;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   /* background: linear-gradient(135deg, #4caf50, #2e7d32); */
   padding: 20px;
+  background-image: url('https://www.podlahyblanket.cz/wp-content/uploads/2020/06/geeks-2894621_960_720.jpg');
+  background-size: 100%;
 }
 
 .auth-card {

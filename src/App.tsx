@@ -6,8 +6,8 @@ import { auth } from './services/firebase';
 
 import Auth from './components/Auth';
 import BurgerBuilder from './components/BurgerBuilder';
-import Checkout from './components/Checkout';
-import Orders from './components/Orders'; // Nếu có
+import Checkout from './components/Checkout/Checkout';
+import Orders from './components/Order/Orders'; // Nếu có
 import PublicRoute from './routes/public';
 import PrivateRoute from './routes/PrivateRoute';
 
