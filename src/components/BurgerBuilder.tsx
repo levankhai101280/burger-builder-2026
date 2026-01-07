@@ -6,8 +6,19 @@ import { signOut, onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import "./BurgerBuilder.css";
 
+// 1. IMPORT REACT-TOASTIFY
+import { ToastContainer, toast, Slide } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+type IngredientType = 'salad' | 'bacon' | 'cheese' | 'meat';
+
+interface Layer {
+  type: IngredientType;
+}
+
 export default function BurgerBuilder() {
-  const [ingredients, setIngredients] = useState({
+  const [layers, setLayers] = useState<Layer[]>([]);
+  const [counts, setCounts] = useState<Record<IngredientType, number>>({
     salad: 0,
     bacon: 0,
     cheese: 0,
@@ -25,12 +36,7 @@ export default function BurgerBuilder() {
   };
 
   const basePrice = 0.0;
-  const totalPrice =
-    basePrice +
-    ingredients.salad * prices.salad +
-    ingredients.bacon * prices.bacon +
-    ingredients.cheese * prices.cheese +
-    ingredients.meat * prices.meat;
+  const totalPrice = layers.reduce((sum, layer) => sum + prices[layer.type], basePrice);
 
   const navigate = useNavigate();
 
@@ -51,12 +57,22 @@ export default function BurgerBuilder() {
     return () => unsubscribe();
   }, [navigate]);
 
-  const addIngredient = (type: keyof typeof ingredients) => {
-    setIngredients((prev) => ({ ...prev, [type]: prev[type] + 1 }));
+  const addIngredient = (type: IngredientType) => {
+    setLayers((prev) => [...prev, { type }]);
+    setCounts((prev) => ({ ...prev, [type]: prev[type] + 1 }));
   };
 
-  const removeIngredient = (type: keyof typeof ingredients) => {
-    setIngredients((prev) => ({
+  const removeIngredient = (type: IngredientType) => {
+    setLayers((prev) => {
+      const index = prev.slice().reverse().findIndex((l) => l.type === type);
+      if (index === -1) return prev;
+      const actualIndex = prev.length - 1 - index;
+      const newLayers = [...prev];
+      newLayers.splice(actualIndex, 1);
+      return newLayers;
+    });
+
+    setCounts((prev) => ({
       ...prev,
       [type]: Math.max(0, prev[type] - 1),
     }));
@@ -68,32 +84,70 @@ export default function BurgerBuilder() {
       navigate('/auth', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      alert('Có lỗi khi đăng xuất. Vui lòng thử lại.');
+      toast.error('Có lỗi khi đăng xuất. Vui lòng thử lại.');
     }
   };
 
+  // --- HÀM CHECKOUT ĐÃ SỬA VỚI TOAST ---
   const handleCheckout = () => {
-    if (totalPrice <= basePrice) return;
-    navigate('/checkout', { state: { ingredients, totalPrice } });
+    if (totalPrice <= basePrice) {
+      // Gọi thông báo Toast
+      toast.warn('Bạn cần chọn thêm nguyên liệu trước khi thanh toán!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "colored", // Hoặc "light", "dark"
+        transition: Slide, // Hiệu ứng trượt
+      });
+      return;
+    }
+    navigate('/checkout', { state: { layers, totalPrice } });
+  };
+  // -------------------------------------
+
+  const renderLayer = (layer: Layer, index: number) => {
+    const className = `layer ${layer.type}`;
+    return (
+      <div key={`${layer.type}-${index}`} className={className}>
+        {layer.type.charAt(0).toUpperCase() + layer.type.slice(1)}
+      </div>
+    );
   };
 
   return (
     <div className="burger-builder">
-      {/* Navbar */}
-      <header className="navbar" >
-        <h1 className="navbar-title">Burger Builder</h1>
+      <ToastContainer />
 
+      {/* Navbar */}
+      <header className="navbar">
+        <h1 className="navbar-title">Burger Builder</h1>
         <div className="navbar-buttons">
           {currentUser && (
-            <span className="welcome-text">
-              Xin chào, <strong>{displayName}</strong>!
-            </span>
+            <div className="user-profile-section">
+              <div className="avatar-wrapper">
+                 {currentUser.photoURL ? (
+                    <img src={currentUser.photoURL} alt="Avatar" className="user-avatar" />
+                 ) : (
+                    // SVG Icon hình người mặc định
+                    <svg 
+                      viewBox="0 0 20 20" 
+                      fill="currentColor" 
+                      className="default-avatar-icon"
+                    >
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                 )}
+              </div>
+              <span className="user-name">{displayName}</span>
+            </div>
           )}
-
           <button className="nav-btn" onClick={() => navigate('/orders')}>
             Orders
           </button>
-
           <button className="nav-btn logout" onClick={handleLogout}>
             Logout
           </button>
@@ -102,36 +156,11 @@ export default function BurgerBuilder() {
 
       {/* Main content */}
       <div className="main-content">
-        {/* Burger Visualization */}
         <section className="burger-section">
           <h2 className="section-title">Your Burger</h2>
           <div className="burger-stack">
             <div className="bread top">Bread Top</div>
-
-            {Array.from({ length: ingredients.salad }).map((_, i) => (
-              <div key={`salad-${i}`} className="layer salad">
-                Salad
-              </div>
-            ))}
-
-            {Array.from({ length: ingredients.bacon }).map((_, i) => (
-              <div key={`bacon-${i}`} className="layer bacon">
-                Bacon
-              </div>
-            ))}
-
-            {Array.from({ length: ingredients.cheese }).map((_, i) => (
-              <div key={`cheese-${i}`} className="layer cheese">
-                Cheese
-              </div>
-            ))}
-
-            {Array.from({ length: ingredients.meat }).map((_, i) => (
-              <div key={`meat-${i}`} className="layer meat">
-                Meat
-              </div>
-            ))}
-
+            {layers.map((layer, index) => renderLayer(layer, index))}
             <div className="bread bottom">Bread Bottom</div>
           </div>
 
@@ -141,7 +170,6 @@ export default function BurgerBuilder() {
           </div>
         </section>
 
-        {/* Controls */}
         <section className="controls-section">
           <h2 className="section-title">Build Your Burger</h2>
 
@@ -156,12 +184,12 @@ export default function BurgerBuilder() {
                   <button
                     className="control-btn less"
                     onClick={() => removeIngredient(type)}
-                    disabled={ingredients[type] === 0}
+                    disabled={counts[type] === 0}
                   >
                     Less
                   </button>
 
-                  <span className="quantity">{ingredients[type]}</span>
+                  <span className="quantity">{counts[type]}</span>
 
                   <button
                     className="control-btn more"
@@ -174,6 +202,7 @@ export default function BurgerBuilder() {
             ))}
           </div>
 
+          {/* Nút Checkout vẫn giữ nguyên không có disabled attribute */}
           <button
             className={`checkout-button ${totalPrice <= basePrice ? 'disabled' : ''}`}
             onClick={handleCheckout}
